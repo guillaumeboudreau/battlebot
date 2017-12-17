@@ -1,0 +1,16 @@
+{
+  "name": "battlebot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "jsdoc": "^3.5.5",
+    "snekfetch": "^3.6.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

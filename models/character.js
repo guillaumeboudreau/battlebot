@@ -1,6 +1,6 @@
 const loc = require("../managers/localizationManager");
 
-const TOOLTIP_REGEX = new RegExp(/{[2]}([^{]*){-}|\^[2]([^\^]*)\^-|{([^}]*)}/, 'g');
+const TOOLTIP_REGEX = new RegExp(/{[0-9]}([^{]*){-}|\^[0-9]([^\^]*)\^-|{([^}]*)}/, 'g');
 const EXTERNAL_INDEX = 1;
 const INTERNAL_INDEX = 2;
 const DEFAULT_INDEX = 3;
@@ -36,6 +36,62 @@ class Character {
             this._abilities.push(new Ability(data["ability" + i]));
         }
     }
+
+    /**
+     * @type {number}
+     * @readonly
+     */
+    get ActorID() {
+        return this._typeId;
+    }
+
+    /**
+     * @type {string}
+     * @readonly
+     */
+    get Name() {
+        return this._name;
+    }
+
+    /**
+     * @type {string}
+     * @readonly
+     */
+    get DevName() {
+        return this._devName;
+    }
+
+    /**
+     * @type {string}
+     * @readonly
+     */
+    get Title() {
+        return this._title;
+    }
+
+    /**
+     * @type {string}
+     * @readonly
+     */
+    get Description() {
+        return this._description;
+    }
+
+    /**
+     * @type {Array.<Battlerite>}
+     * @readonly
+     */
+    get Battlerites() {
+        return this._battlerites;
+    }
+
+    /**
+     * @type {Array.<Ability>}
+     * @readonly
+     */
+    get Abilities() {
+        return this._abilities;
+    }
 }
 
 class Ability {
@@ -54,12 +110,22 @@ class Ability {
         this._iconId = data.icon;
         /** @type {string} */
         this._icon128Id = data.icon128;
-        /** @type {BattleriteTooltipData} */
-        this._tooltipData = new BattleriteTooltipData(data.tooltipData);
+        /** @type {TooltipData} */
+        this._tooltipData = new TooltipData(data.tooltipData);
     }
 
     /**
-     * @returns {string} The localized description
+     * The name of the current ability
+     * @type {string}
+     * @readonly
+     */
+    get Name()  {
+        return this._name;
+    }
+
+    /**
+     * The localized description
+     * @type {string}
      * @readonly
      */
     get LocalizedDescription() {
@@ -72,10 +138,11 @@ class Ability {
                 const valueName = match[DEFAULT_INDEX] || match[EXTERNAL_INDEX] || match[INTERNAL_INDEX];
 
                 let value = this._tooltipData._nodes.find(x => x._name.toUpperCase() == valueName.toUpperCase());
-                if (!value) {
-                    value = { _value: valueName };
+                let description = valueName;
+                if (value && value.LocalizedDescription != "{None}") {
+                    description = value.LocalizedDescription;
                 }
-                tempDescription = tempDescription.replace(matchedValue, value._value);
+                tempDescription = tempDescription.replace(matchedValue, description);
 
                 match = TOOLTIP_REGEX.exec(stringToMatch);
             }
@@ -102,10 +169,15 @@ class Battlerite {
         this._iconId = data.icon;
         /** @type {number} */
         this._abilitySlot = Number.parseInt(data.abilitySlot);
-        /** @type {BattleriteTooltipData} */
-        this._tooltipData = new BattleriteTooltipData(data.tooltipData);
+        /** @type {TooltipData} */
+        this._tooltipData = new TooltipData(data.tooltipData);
     }
 
+    /**
+     * The localized description of the Battlerite
+     * @type {string}
+     * @readonly
+     */
     get LocalizedDescription() {
         if (!this._localizedDescription) {
             let tempDescription = this._description;
@@ -115,11 +187,9 @@ class Battlerite {
                 const matchedValue = match[0];
                 const valueName = match[DEFAULT_INDEX] || match[EXTERNAL_INDEX] || match[INTERNAL_INDEX];
 
-                let value = this._tooltipData._nodes.find(x => x._name.toUpperCase() == valueName.toUpperCase());
-                if (!value) {
-                    value = { _value: valueName };
-                }
-                tempDescription = tempDescription.replace(matchedValue, value._value);
+                const value = this._tooltipData._nodes.find(x => x._name.toUpperCase() == valueName.toUpperCase());
+
+                tempDescription = tempDescription.replace(matchedValue, value ? value.LocalizedDescription : valueName);
 
                 match = TOOLTIP_REGEX.exec(stringToMatch);
             }
@@ -130,21 +200,29 @@ class Battlerite {
     }
 }
 
-class BattleriteTooltipData {
+class TooltipData {
     /**
      * @constructor
      * @param {object} data The battlerite data sent from the server 
      */
     constructor(data) {
-        /** @type {Array.<BattleriteTooltipNode} */
+        /** @type {Array.<TooltipNode} */
         this._nodes = [];
         for (let i = 0; i < data.length; i++) {
-            this._nodes.push(new BattleriteTooltipNode(data[i]));
+            this._nodes.push(new TooltipNode(data[i]));
         }
+    }
+
+    /**
+     * @type {Array.<TooltipNode>}
+     * @readonly
+     */
+    get Nodes() {
+        return this._nodes;
     }
 }
 
-class BattleriteTooltipNode {
+class TooltipNode {
     constructor(data) {
         /** @type {string} */
         this._localizedName = loc.Get(data.LocalizedName);
@@ -162,8 +240,27 @@ class BattleriteTooltipNode {
         this._unitType = data.UnitType;
     }
 
+    /**
+     * The localized description of the value
+     * @type {string}
+     * @readonly
+     */
     get LocalizedDescription() {
-
+        if (!this._localizedDescription) {
+            const valueBeforeUnitType = this._valueType === `RangeValue` ? `${this._value} - ${this._maxValue}` : this._value;
+            switch (this._unitType) {
+                case `ModifierPercent`:
+                case `Percent`:
+                    this._localizedDescription = `${valueBeforeUnitType}%`;
+                    break;
+                case `Second`:
+                    this._localizedDescription = `${valueBeforeUnitType} seconds`;
+                    break;
+                default:
+                    this._localizedDescription = valueBeforeUnitType;
+            }
+        }
+        return this._localizedDescription
     }
 }
 

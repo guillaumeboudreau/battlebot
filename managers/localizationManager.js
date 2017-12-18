@@ -26,7 +26,7 @@ class LocalizationManager {
      */
     Get(key) {
         if (this._keys && this._keys[key]) {
-            return this.keys[key];
+            return this._keys[key];
         }
         return key;
     }

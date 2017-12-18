@@ -6,19 +6,34 @@ async function main() {
 
     const loc = require("./managers/localizationManager");
     await loc.LoadLanguage(DEFAULT_LANGUAGE);
-    
+
     const request = require("snekfetch");
     const Player = require("./models/player");
-    const Test = require("./data/gameplay.json");
+    const Character = require("./models/character");
+    const gameplayData = require("./data/gameplay.json");
+    const characters = [];
+    for (let i = 0; i < gameplayData.characters.length; i++) {
+        characters.push(new Character(gameplayData.characters[i]));
+    }
 
-    console.log(Test.characters[0]);
+    for (let i = 0; i < 1; i++) {
+        console.log(characters[i]._name);
+        for (let j = 0; j < characters[i]._abilities.length; j++) {
+            console.log(characters[i]._abilities[j]._name);
+            console.log(characters[i]._abilities[j].LocalizedDescription);
+        }
 
-
-    request.get(playerIdUrl, { headers: { Authorization: `Bearer ${apiKey}`, Accept: `application/vnd.api+json` } })
-        .then(r => {
-            const test = new Player(r.body.data);
-            console.log(test);
-        });
+        for (let k = 0; k < characters[i]._battlerites.length; k++) {
+            console.log(characters[i]._battlerites[k]._name);
+            console.log(characters[i]._battlerites[k].LocalizedDescription);
+        }
+    }
+    /*
+        request.get(playerIdUrl, { headers: { Authorization: `Bearer ${apiKey}`, Accept: `application/vnd.api+json` } })
+            .then(r => {
+                const test = new Player(r.body.data);
+                console.log(test);
+            });*/
 }
 
 main();
